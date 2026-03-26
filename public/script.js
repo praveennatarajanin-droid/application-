@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 icon.innerHTML = stepNum.toString().padStart(2, '0');
             } else if (stepNum < currentStep) {
                 item.classList.add('completed');
-                icon.innerHTML = '✓';
+                icon.innerHTML = '✔';
             } else {
                 icon.innerHTML = stepNum.toString().padStart(2, '0');
             }
@@ -146,6 +146,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (val.length > 0) formatted += val.substring(0, 5);
             if (val.length > 5) formatted += ' ' + val.substring(5, 10);
             target.value = val ? formatted : '';
+        }
+
+        if (target.type === 'file') {
+            const display = target.closest('.modern-upload-card').querySelector('.file-name-display');
+            if (display) {
+                display.textContent = target.files[0] ? target.files[0].name : 'No file selected';
+            }
         }
 
         const dobOrder = ['dob_day', 'dob_month', 'dob_year'];
@@ -353,25 +360,70 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const result = await response.json();
+            
             if (result.success) {
                 clearStorage();
-                document.querySelector('.app-container').style.opacity = '0';
-                setTimeout(() => {
-                    document.querySelector('.app-container').style.display = 'none';
-                    document.getElementById('successModal').style.display = 'flex';
-                }, 300);
+                // Explicitly hide form container and show success modal
+                const appContainer = document.querySelector('.app-container');
+                const successModal = document.getElementById('successModal');
+                
+                if (appContainer) appContainer.style.display = 'none';
+                if (successModal) successModal.style.display = 'flex';
             } else {
-                alert('Submission error: ' + result.message);
+                alert('Submission error: ' + (result.message || 'Unknown error'));
             }
         } catch (err) {
             console.error(err);
-            alert('A network error occurred.');
+            alert('A network error occurred. Please try again.');
         } finally {
             showLoading(submitBtn, false);
         }
     });
+
+    // 5. PDF Generation Logic (Surgical)
+    const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+    if (downloadPdfBtn) {
+        downloadPdfBtn.addEventListener('click', () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const formData = new FormData(form);
+            const studentName = formData.get('name_english') || 'Applicant';
+            
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.setTextColor(128, 0, 0); // Maroon
+            doc.text("MCC Campus School - Admission Application", 105, 20, { align: "center" });
+            
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 28, { align: "center" });
+            
+            let y = 45;
+            const entries = [
+                ['Class Registered', formData.get('class_registered')],
+                ['Student Name', formData.get('name_english')],
+                ['Date of Birth', `${formData.get('dob_day')}/${formData.get('dob_month')}/${formData.get('dob_year')}`],
+                ['Gender', formData.get('gender')],
+                ['Aadhaar Number', formData.get('aadhar_no')],
+                ['Address', formData.get('address')],
+                ['Email', formData.get('email')],
+                ['Father Name', formData.get('father_name')],
+                ['Mother Name', formData.get('mother_name')]
+            ];
+
+            entries.forEach(([label, val]) => {
+                doc.setFont("helvetica", "bold");
+                doc.text(`${label}:`, 20, y);
+                doc.setFont("helvetica", "normal");
+                doc.text(val || '-', 70, y);
+                y += 10;
+            });
+
+            doc.save(`Application_${studentName.replace(/ /g, '_')}.pdf`);
+        });
+    }
 });
 
 function closeModal() {
-    window.location.reload();
+    window.location.href = '/';
 }

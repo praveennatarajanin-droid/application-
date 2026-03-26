@@ -329,22 +329,27 @@
                         <div class="modern-upload-card">
                             <label>Student Photo *</label>
                             <input type="file" name="photo" accept="image/*" required>
+                            <span class="file-name-display">No file selected</span>
                         </div>
                         <div class="modern-upload-card">
                             <label>Aadhaar Copy *</label>
                             <input type="file" name="aadhar_copy" required>
+                            <span class="file-name-display">No file selected</span>
                         </div>
                         <div class="modern-upload-card">
                             <label>Birth Certificate *</label>
                             <input type="file" name="birth_cert" required>
+                            <span class="file-name-display">No file selected</span>
                         </div>
                         <div class="modern-upload-card">
                             <label>Community Certificate *</label>
                             <input type="file" name="community_cert" required>
+                            <span class="file-name-display">No file selected</span>
                         </div>
                         <div class="modern-upload-card">
                             <label>Transfer Certificate *</label>
                             <input type="file" name="transfer_cert" required>
+                            <span class="file-name-display">No file selected</span>
                         </div>
                     </div>
 
@@ -354,6 +359,13 @@
                     <div class="review-section-title">Application Details (For Verification)</div>
                     <div id="finalReviewContainer">
                         <!-- Content injected by JS -->
+                    </div>
+
+                    <!-- PDF Download Button (Isolated) -->
+                    <div style="margin: 30px 0; text-align: center;">
+                        <button type="button" class="btn btn-secondary" id="downloadPdfBtn">
+                            Download Application (PDF)
+                        </button>
                     </div>
 
                     <div class="declaration-box" style="border:none; background:none; padding: 40px 0; border-top: 1.5px solid var(--maroon-soft); margin-top:20px;">
@@ -368,7 +380,7 @@
 
                 <!-- Navigation Buttons -->
                 <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="prevBtn" style="display:none;">Previous</button>
+                    <button type="button" class="btn btn-primary" id="prevBtn" style="display:none;">Previous</button>
                     <button type="button" class="btn btn-primary" id="continueBtn">
                         <span>Continue</span>
                         <div class="spinner"></div>
@@ -392,6 +404,7 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
