@@ -121,7 +121,7 @@ app.post('/api/register', upload.fields([
   { name: 'aadhar_copy', maxCount: 1 },
   { name: 'birth_cert', maxCount: 1 },
   { name: 'community_cert', maxCount: 1 },
-  { name: 'tc_copy', maxCount: 1 }
+  { name: 'transfer_cert', maxCount: 1 }
 ]), (req, res) => {
   const insertTransaction = db.transaction(() => {
     try {
@@ -186,7 +186,7 @@ app.post('/api/register', upload.fields([
         'aadhar_copy': 'Aadhar Card Copy',
         'birth_cert': 'Birth Certificate',
         'community_cert': 'Community Certificate',
-        'tc_copy': 'Transfer Certificate'
+        'transfer_cert': 'Transfer Certificate'
       };
 
       const insertDoc = db.prepare(`

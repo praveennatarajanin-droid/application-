@@ -538,15 +538,15 @@ input:focus, textarea:focus {
     padding: 0 5px;
 }
 
-/* Modal Overlay */
+/* Modal Overlay (Enhanced UI) */
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.5); /* Dimmed soft backdrop */
+    backdrop-filter: blur(6px);    /* Modern glass effect */
     display: none;
     align-items: center;
     justify-content: center;
@@ -555,31 +555,66 @@ input:focus, textarea:focus {
 
 .modal-card {
     background: white;
-    padding: 64px 48px;
-    border-radius: var(--radius-lg);
-    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.2);
+    padding: 30px 40px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); /* Soft premium shadow */
     text-align: center;
-    max-width: 580px;
+    max-width: 540px;
     width: 90%;
-    animation: modalPremiumEntry 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    animation: modalPremiumEntry 0.5s cubic-bezier(0.175, 0.885, 0.32, 1) forwards;
 }
 
 @keyframes modalPremiumEntry {
-    from { opacity: 0; transform: scale(0.8) translateY(40px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
+    from { 
+        opacity: 0; 
+        transform: scale(0.95); /* Subtle scale entry */
+    }
+    to { 
+        opacity: 1; 
+        transform: scale(1); 
+    }
 }
 
 .modal-icon {
-    width: 70px;
-    height: 70px;
+    width: 72px;
+    height: 72px;
     background: var(--success);
     color: #fff;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2rem;
-    margin: 0 auto 25px;
+    font-size: 2.2rem;
+    margin: 0 auto 24px;
+    animation: iconScaleIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.4) forwards;
+}
+
+@keyframes iconScaleIn {
+    from { transform: scale(0); }
+    to { transform: scale(1); }
+}
+
+.modal-card h2 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--maroon);
+    margin-bottom: 12px;
+}
+
+.modal-card p {
+    color: #555; /* Softer text color */
+    line-height: 1.6;
+    margin-bottom: 30px;
+    font-size: 0.95rem;
+}
+
+.modal-card .btn {
+    transition: all 0.3s ease;
+}
+
+.modal-card .btn:hover {
+    transform: translateY(-2px); /* Slight lift effect */
+    box-shadow: 0 6px 15px rgba(128, 0, 0, 0.2);
 }
 
 /* Isolated Download PDF Button Styling */
@@ -604,6 +639,13 @@ input:focus, textarea:focus {
 
 #prevBtn {
     margin-right: auto;
+}
+
+/* Isolated Error State (Surgical) */
+.error {
+    border-color: var(--maroon) !important;
+    box-shadow: 0 0 0 4px var(--maroon-glow) !important;
+    transition: all 0.3s ease;
 }
 
 
