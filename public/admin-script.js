@@ -24,8 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const statPending = document.getElementById('statPending');
     const statToday = document.getElementById('statToday');
 
-    const recentTable = document.querySelector('#recentAppsTable tbody');
-    const fullTable = document.querySelector('#fullAppsTable tbody');
+    const recentTable = document.getElementById('dashboardTableBody');
+    const fullTable = document.getElementById('fullTableBody');
     const appSearch = document.getElementById('appSearch');
 
     const detailModal = document.getElementById('detailModal');
@@ -94,8 +94,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td><span class="badge-pill-ui badge-student">${app.class_registered || 'Standard'}</span></td>
                 <td>${app.email || '-'}</td>
                 <td>${new Date(app.created_at).toLocaleDateString()}</td>
+                <td style="text-align: right;"><button class="btn-view" data-id="${app.id}">View</button></td>
             `;
             recentTable.appendChild(tr);
+        });
+
+        recentTable.querySelectorAll('.btn-view').forEach(btn => {
+            btn.addEventListener('click', () => viewApplication(btn.dataset.id));
         });
     }
 
@@ -114,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${app.class_registered}</td>
                 <td>${app.contact_no || '-'}</td>
                 <td>${new Date(app.created_at).toLocaleDateString()}</td>
-                <td><button class="btn-view" data-id="${app.id}" style="padding: 6px 14px; font-size: 0.75rem;">View</button></td>
+                <td><button class="btn-view" data-id="${app.id}">View</button></td>
             `;
             fullTable.appendChild(tr);
         });
@@ -126,31 +131,44 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Updated loadDashboard to use split renderers
+
     async function loadDashboard() {
         try {
             const statsRes = await fetch('/api/admin/stats');
             const stats = await statsRes.json();
-            statTotal.textContent = stats.total;
-            statPending.textContent = stats.pending;
-            statToday.textContent = stats.today;
+            
+            // Safe updates: only set if element exists
+            const elTotal = document.getElementById('statTotal');
+            const elPending = document.getElementById('statPending');
+            const elStaff = document.getElementById('statStaff');
+            const elCerts = document.getElementById('statCerts');
 
+            if (elTotal) elTotal.textContent = stats.total || 0;
+            if (elPending) elPending.textContent = stats.pending || 0;
+            if (elStaff) elStaff.textContent = '7'; // Mock/Static for now
+            if (elCerts) elCerts.textContent = '0'; // Mock/Static for now
+
+            // Fetch and render applications
             const appsRes = await fetch('/api/admin/applications');
             const apps = await appsRes.json();
             
-            renderRecentTable(apps.slice(0, 5));
-            renderFullTable(apps);
+            if (recentTable) renderRecentTable(apps.slice(0, 5));
+            if (fullTable) renderFullTable(apps);
 
-            appSearch.addEventListener('input', (e) => {
-                const query = e.target.value.toLowerCase();
-                const filtered = apps.filter(app => 
-                    app.name_english.toLowerCase().includes(query) || 
-                    (app.registration_no && app.registration_no.toLowerCase().includes(query)) ||
-                    (app.contact_no && app.contact_no.toLowerCase().includes(query))
-                );
-                renderFullTable(filtered);
-            });
+            // Re-bind search
+            if (appSearch) {
+                appSearch.addEventListener('input', (e) => {
+                    const query = e.target.value.toLowerCase();
+                    const filtered = apps.filter(app => 
+                        (app.name_english && app.name_english.toLowerCase().includes(query)) || 
+                        (app.registration_no && app.registration_no.toLowerCase().includes(query)) ||
+                        (app.contact_no && app.contact_no.toLowerCase().includes(query))
+                    );
+                    if (fullTable) renderFullTable(filtered);
+                });
+            }
         } catch (err) {
-            console.error(err);
+            console.error('Dashboard Load Error:', err);
         }
     }
 
@@ -166,35 +184,37 @@ document.addEventListener('DOMContentLoaded', () => {
             detName.textContent = student.name_english;
             detDate.textContent = `Submitted on: ${new Date(student.created_at).toLocaleString()}`;
 
-            // Render Summary
+
+            // Render Summary with Premium Grid
             let summaryHTML = `
-                <div class="summary-section">
-                    <h4 style="color:#800000; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:5px;">STUDENT INFORMATION</h4>
-                    <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; font-size:0.9rem;">
-                        <div><strong>NAME:</strong> ${student.name_english} (${student.name_tamil})</div>
-                        <div><strong>GENDER:</strong> ${student.gender}</div>
-                        <div><strong>D.O.B:</strong> ${student.dob_day}/${student.dob_month}/${student.dob_year}</div>
-                        <div><strong>AADHAAR:</strong> ${student.aadhar_no}</div>
-                        <div><strong>BLOOD GROUP:</strong> ${student.blood_group}</div>
-                        <div><strong>ADDRESS:</strong> ${student.address}</div>
-                        <div><strong>PARENT CONTACT:</strong> ${student.contact_no}</div>
-                        <div><strong>PARENT EMAIL:</strong> ${student.email}</div>
+                <div class="summary-block">
+                    <h4 class="summary-title">Student Identification</h4>
+                    <div class="data-grid-flow">
+                        <div class="data-field"><span class="field-label">Full Name</span><span class="field-value">${student.name_english}</span></div>
+                        <div class="data-field"><span class="field-label">Native Name</span><span class="field-value">${student.name_tamil}</span></div>
+                        <div class="data-field"><span class="field-label">Gender</span><span class="field-value">${student.gender}</span></div>
+                        <div class="data-field"><span class="field-label">Date of Birth</span><span class="field-value">${student.dob_day}/${student.dob_month}/${student.dob_year}</span></div>
+                        <div class="data-field"><span class="field-label">Aadhaar No</span><span class="field-value">${student.aadhar_no}</span></div>
+                        <div class="data-field"><span class="field-label">Blood Group</span><span class="field-value">${student.blood_group}</span></div>
+                        <div class="data-field"><span class="field-label">Contact No</span><span class="field-value">${student.contact_no}</span></div>
+                        <div class="data-field"><span class="field-label">Email Address</span><span class="field-value">${student.email}</span></div>
+                        <div class="data-field" style="grid-column: span 2;"><span class="field-label">Residential Address</span><span class="field-value">${student.address}</span></div>
                     </div>
                 </div>
             `;
 
             parents.forEach(p => {
                 summaryHTML += `
-                    <div class="summary-section" style="margin-top:30px;">
-                        <h4 style="color:#800000; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:5px;">${p.relation.toUpperCase()}'S DETAILS</h4>
-                        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; font-size:0.9rem;">
-                            <div><strong>NAME:</strong> ${p.name}</div>
-                            <div><strong>D.O.B:</strong> ${p.dob}</div>
-                            <div><strong>QUALIFICATION:</strong> ${p.qualification}</div>
-                            <div><strong>OCCUPATION:</strong> ${p.occupation}</div>
-                            <div><strong>OFFICE:</strong> ${p.office_name}</div>
-                            <div><strong>MONTHLY INCOME:</strong> ${p.monthly_income}</div>
-                            <div><strong>AADHAAR:</strong> ${p.aadhar_no}</div>
+                    <div class="summary-block">
+                        <h4 class="summary-title">${p.relation.toUpperCase()}'S BACKGROUND</h4>
+                        <div class="data-grid-flow">
+                            <div class="data-field"><span class="field-label">Full Name</span><span class="field-value">${p.name}</span></div>
+                            <div class="data-field"><span class="field-label">Date of Birth</span><span class="field-value">${p.dob}</span></div>
+                            <div class="data-field"><span class="field-label">Qualification</span><span class="field-value">${p.qualification || '-'}</span></div>
+                            <div class="data-field"><span class="field-label">Occupation</span><span class="field-value">${p.occupation || '-'}</span></div>
+                            <div class="data-field"><span class="field-label">Monthly Income</span><span class="field-value">${p.monthly_income || '-'}</span></div>
+                            <div class="data-field"><span class="field-label">Aadhaar No</span><span class="field-value">${p.aadhar_no || '-'}</span></div>
+                            <div class="data-field" style="grid-column: span 2;"><span class="field-label">Office Details</span><span class="field-value">${p.office_name || '-'}, ${p.office_address || '-'}</span></div>
                         </div>
                     </div>
                 `;
@@ -202,16 +222,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             detInfoContent.innerHTML = summaryHTML;
 
-            // Render Documents
+            // Render Documents Registry
             detDocsGrid.innerHTML = '';
+            detDocsGrid.className = 'doc-registry-grid';
             documents.forEach(doc => {
                 const card = document.createElement('div');
+                card.className = 'doc-pill-card';
                 card.innerHTML = `
-                    <div style="background:#f8f9fa; border-radius:12px; padding:15px; text-align:center; border:1px solid #eee;">
-                        <p style="font-size:0.7rem; font-weight:800; color:var(--text-muted); margin-bottom:10px; text-transform:uppercase;">${doc.doc_type}</p>
-                        <img src="/${doc.file_path}" style="width:100%; height:120px; object-fit:cover; border-radius:8px; cursor:pointer;" onclick="window.open('/${doc.file_path}')">
-                        <a href="/${doc.file_path}" download class="btn" style="padding:4px 10px; font-size:0.7rem; margin-top:10px; display:inline-block; border:1px solid var(--maroon); color:var(--maroon);">Download Certificate</a>
+                    <p class="doc-name">${doc.doc_type.replace(/_/g, ' ')}</p>
+                    <div class="doc-preview-box">
+                        <img src="/${doc.file_path}" onclick="window.open('/${doc.file_path}')" title="Click to Expand">
                     </div>
+                    <a href="/${doc.file_path}" download class="btn-download-flat">Download Certificate</a>
                 `;
                 detDocsGrid.appendChild(card);
             });
