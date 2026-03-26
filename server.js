@@ -57,6 +57,7 @@ function initDB() {
       id_mark_1 TEXT,
       id_mark_2 TEXT,
       medical_history TEXT,
+      status TEXT DEFAULT 'Pending',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -103,6 +104,14 @@ function initDB() {
 
 initDB();
 
+// Migration: Add status and registration_no if not present
+try {
+  db.prepare("ALTER TABLE students ADD COLUMN status TEXT DEFAULT 'Pending'").run();
+} catch (e) { /* Already exists */ }
+try {
+  db.prepare("ALTER TABLE students ADD COLUMN registration_no TEXT").run();
+} catch (e) { /* Already exists */ }
+
 // Multer Storage Configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -129,20 +138,25 @@ app.post('/api/register', upload.fields([
       const parentsData = JSON.parse(req.body.parents);
       const associationsData = JSON.parse(req.body.associations);
 
+      // Generate Registration No (MCC-YYYY-XXXX)
+      const year = new Date().getFullYear();
+      const count = db.prepare('SELECT COUNT(*) as total FROM students').get().total + 1;
+      const regNo = `MCC-${year}-${String(count).padStart(4, '0')}`;
+
       // 1. Insert Student Record
       const insertStudent = db.prepare(`
         INSERT INTO students (
-          academic_year, class_registered, name_english, name_tamil,
+          registration_no, academic_year, class_registered, name_english, name_tamil,
           dob_day, dob_month, dob_year, gender, blood_group,
           nationality, religion, caste, community, aadhar_no,
           address, contact_no, email, mother_tongue, other_languages,
           previous_school_name, previous_school_class, previous_school_year,
           emis_no, id_mark_1, id_mark_2, medical_history
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       const studentResult = insertStudent.run(
-        studentData.academic_year, studentData.class_registered, studentData.name_english, studentData.name_tamil,
+        regNo, studentData.academic_year, studentData.class_registered, studentData.name_english, studentData.name_tamil,
         studentData.dob_day, studentData.dob_month, studentData.dob_year, studentData.gender, studentData.blood_group,
         studentData.nationality, studentData.religion, studentData.caste, studentData.community, studentData.aadhar_no,
         studentData.address, studentData.contact_no, studentData.email, studentData.mother_tongue, studentData.other_languages,
@@ -212,6 +226,58 @@ app.post('/api/register', upload.fields([
   } catch (err) {
     console.error('Error during registration:', err);
     res.status(500).json({ success: false, message: 'Registration Failed' });
+  }
+});
+
+
+// --- ADMIN ROUTES (Surgical Addition) ---
+
+// Admin Login
+app.post('/api/admin/login', (req, res) => {
+  const { email, password } = req.body;
+  if (email === 'admin@mcc.com' && password === 'admin123') {
+    res.json({ success: true, token: 'mcc-admin-token-2026' });
+  } else {
+    res.status(401).json({ success: false, message: 'Invalid credentials' });
+  }
+});
+
+// Dashboard Stats
+app.get('/api/admin/stats', (req, res) => {
+  try {
+    const total = db.prepare('SELECT COUNT(*) as count FROM students').get().count;
+    const pending = db.prepare("SELECT COUNT(*) as count FROM students WHERE status = 'Pending'").get().count;
+    const today = db.prepare("SELECT COUNT(*) as count FROM students WHERE date(created_at) = date('now')").get().count;
+    res.json({ total, pending, today });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// All Applications
+app.get('/api/admin/applications', (req, res) => {
+  try {
+    const apps = db.prepare('SELECT * FROM students ORDER BY created_at DESC').all();
+    res.json(apps);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Single Application Detailed
+app.get('/api/admin/application/:id', (req, res) => {
+  try {
+    const id = req.params.id;
+    const student = db.prepare('SELECT * FROM students WHERE id = ?').get(id);
+    if (!student) return res.status(404).json({ message: 'Not found' });
+
+    const parents = db.prepare('SELECT * FROM parents WHERE student_id = ?').all(id);
+    const associations = db.prepare('SELECT * FROM associations WHERE student_id = ?').all(id);
+    const documents = db.prepare('SELECT * FROM documents WHERE student_id = ?').all(id);
+
+    res.json({ student, parents, associations, documents });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
